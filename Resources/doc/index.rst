@@ -20,7 +20,6 @@ Todo
     - execute ``composer install --dry-run`` and ``php app/check.php``during deployment to verify that environment is
       sane
 #. general
-    - fix doc cross-links in all docs
     - put a link to presentation
 
 Detailed information
