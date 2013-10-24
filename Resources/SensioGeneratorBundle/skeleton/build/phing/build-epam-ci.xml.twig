@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="symfony-framework-epam-ci-bundle" default="build">
+    <!--Inspired by http://jenkins-php.org/ and https://github.com/xurumelous/symfony2-jenkins-template/ -->
+
+    <!-- Properties -->
+    <property file="build.properties"/>
+    <property file="build.properties.dist"/>
+    <property name="project.symfony-twig-bundles" value="AcmeDemoBundle"/>
+    <property name="project.version" value="0.0.1-SNAPSHOT"/>
+    <property name="project.phpcs-php-standard" value="Symfony2EpamCi"/>
+    <property name="project.phpcs-js-standard" value="Symfony2EpamCiJs"/>
+
+    <property name="project.dir-bin" value="bin"/>
+    <property name="project.dir-backups" value="backups"/>
+    <property name="project.dir-app" value="app"/>
+    <property name="project.dir-app-cache" value="${project.dir-app}/cache"/>
+    <property name="project.dir-app-config" value="${project.dir-app}/config"/>
+    <property name="project.dir-app-resources" value="${project.dir-app}/Resources"/>
+    <property name="project.dir-app-resources-configs" value="${project.dir-app-resources}/configs"/>
+    <property name="project.dir-app-resources-configs-phpunit" value="${project.dir-app-resources-configs}/phpunit"/>
+    <property name="project.dir-app-resources-configs-phpmd" value="${project.dir-app-resources-configs}/phpmd"/>
+    <!--<property name="project.dir-app-resources-configs-hphpa" value="${project.dir-app-resources-configs}/hphpa"/>-->
+    <property name="project.dir-app-logs" value="${project.dir-app}/logs"/>
+    <property name="project.dir-src" value="src"/>
+    <property name="project.dir-vendors" value="vendor"/>
+    <property name="project.dir-web" value="web"/>
+    <property name="project.dir-web-bundles" value="${project.dir-web}/bundles"/>
+    <property name="project.dir-web-css" value="${project.dir-web}/css"/>
+    <property name="project.dir-web-js" value="${project.dir-web}/js"/>
+    <property name="project.dir-build" value="build"/>
+    <property name="project.dir-build-api" value="${project.dir-build}/api"/>
+    <property name="project.dir-build-codebrowser" value="${project.dir-build}/code-browser"/>
+    <property name="project.dir-build-coverage" value="${project.dir-build}/coverage"/>
+    <property name="project.dir-build-logs" value="${project.dir-build}/logs"/>
+    <property name="project.dir-build-pdepend" value="${project.dir-build}/pdepend"/>
+    <property name="project.dir-build-output" value="${project.dir-build}/output"/>
+
+    <property name="project.bin-composer" value="${project.basedir}/composer.phar"/>
+    <property name="project.bin-php-cs-fixer" value="${project.basedir}/php-cs-fixer.phar"/>
+    <property name="project.bin-php" value="php"/>
+    <property name="project.bin-security-checker"
+              value="${project.bin-php} vendor/sensiolabs/security-checker/security-checker"/>
+    <property name="project.bin-capistrano" value="cap"/>
+
+    <property name="project.file-config-parameters-ci" value="app/config/parameters_ci.yml"/>
+    <property name="project.file-doctrine-db-schema" value="${project.dir-build-output}/db-schema.sql"/>
+    <property name="project.file-package-db-schema" value="db-schema.sql"/>
+    <property name="project.file-doctrine-migrations-status"
+              value="${project.dir-build-output}/doctrine-migrations.txt"/>
+    <property name="project.file-package"
+              value="${project.dir-build-output}/${phing.project.name}-${project.version}.tar.gz"/>
+    <property name="project.file-package-version"
+              value="version.txt"/>
+    <property name="project.file-config-phpmd" value="${project.dir-app-resources-configs-phpmd}/phpmd.xml"/>
+    <!--<property name="project.file-config-hphpa-ruleset" value="${project.dir-app-resources-configs-hphpa}/hphpa_ruleset.xml"/>-->
+
+    <property name="project.symfony-doctrine-migrations-enable" value="0"/>
+    <property name="project.symfony-doctrine-fixtures-enable" value="0"/>
+    <property name="project.symfony-doctrine-fixtures-append" value="1"/>
+
+    <property name="project.deploy-env" value="qa"/>
+    <property name="project.deploy-dump-version" value="1"/>
+    <property name="project.deploy-maintenance-enable" value="1"/>
+    <property name="project.deploy-maintenance-reason" value="Deployment"/>
+    <property name="project.deploy-maintenance-until" value=""/>
+    <property name="project.deploy-archive" value="${project.file-package}"/>
+    <property name="project.deploy-cleanup-old-releases" value="1"/>
+    <property name="project.deploy-backup-db" value="1"/>
+    <property name="project.deploy-clear-doctrine-cache" value="1"/>
+
+    <!-- Filesets -->
+    <fileset dir="${project.dir-src}" id="src-php">
+        <include name="**/*.php"/>
+    </fileset>
+
+    <fileset dir="${project.dir-src}" id="src-js">
+        <include name="**/*.js"/>
+    </fileset>
+
+    <fileset dir="${project.basedir}" id="package">
+        <include name="${project.dir-app}/**"/>
+        <exclude name="${project.dir-app-config}/parameters.yml"/>
+        <include name="${project.dir-src}/**"/>
+        <include name="${project.dir-vendors}/**/*"/>
+        <include name="${project.dir-web}/**"/>
+        <include name="${project.file-package-version}"/>
+        <include name="${project.file-package-db-schema}"/>
+    </fileset>
+
+    <fileset dir="${project.basedir}" id="symfony-temp">
+        <include name="${project.dir-app-cache}/**"/>
+        <exclude name="${project.dir-app-cache}/.gitkeep"/>
+        <include name="${project.dir-app-logs}/*"/>
+        <exclude name="${project.dir-app-logs}/.gitkeep"/>
+    </fileset>
+
+    <fileset dir="${project.dir-build-output}" id="package-artifacts">
+        <include name="*.tar.gz"/>
+    </fileset>
+
+    <!-- Targets -->
+    <target name="build" description="Builds the project. Intended for usage on the command line before committing."
+            depends="clean,prepare,composer-validate,phplint,php-cs-fixer,symfony-assets-install-dev,symfony-assetic-dump-dev,symfony-doctrine-schema-validate,symfony-doctrine-fixtures-load,symfony-twig-lint,phpmd,phpcs,phpcs-js,phpcpd,phpunit,dependencies-list-updates,sensiolabs-security-checker"/>
+    <target name="build-ci" description="Builds the project for the continuous integration server"
+            depends="clean,prepare,composer-validate,copy-configs-ci,dependencies-install,check-environment,phplint,symfony-doctrine-database-recreate,symfony-doctrine-schema-validate,symfony-doctrine-fixtures-load,symfony-twig-lint,phploc,pdepend,phpmd-ci,phpcs-ci,phpcs-js-ci,phpcpd-ci,apidoc,phpunit,phpcb,dependencies-list-updates,sensiolabs-security-checker"/>
+    <target name="package" description="Prepares archived package containing ready for deployment application"
+            depends="prepare,composer-validate,copy-configs-ci,dependencies-install,symfony-doctrine-schema-dump,symfony-cache-warmup-prod,symfony-assets-install-prod,symfony-assetic-dump-prod,package-db-schema,package-version,package-archive"/>
+
+    <target name="clean" description="Cleanup build artifacts">
+        <delete dir="${project.dir-backups}"/>
+        <delete dir="${project.dir-build-api}"/>
+        <delete dir="${project.dir-build-codebrowser}"/>
+        <delete dir="${project.dir-build-coverage}"/>
+        <delete dir="${project.dir-build-logs}"/>
+        <delete dir="${project.dir-build-pdepend}"/>
+        <delete dir="${project.dir-build-output}"/>
+        <delete dir="${project.dir-web-bundles}"/>
+        <delete dir="${project.dir-web-css}"/>
+        <delete dir="${project.dir-web-js}"/>
+        <delete includeemptydirs="true">
+            <fileset refid="symfony-temp"/>
+        </delete>
+    </target>
+
+    <target name="prepare" description="Prepare for build">
+        <mkdir dir="${project.dir-build-api}"/>
+        <mkdir dir="${project.dir-build-codebrowser}"/>
+        <mkdir dir="${project.dir-build-coverage}"/>
+        <mkdir dir="${project.dir-build-logs}"/>
+        <mkdir dir="${project.dir-build-pdepend}"/>
+        <mkdir dir="${project.dir-build-output}"/>
+    </target>
+
+    <target name="check-environment" description="Check if environment is configured correctly for Symfony 2">
+        <exec command="${project.bin-php} ${project.dir-app}/check.php" checkreturn="true" logoutput="true"/>
+    </target>
+
+    <target name="copy-configs-ci" description="Copy configs for CI server">
+        <copy file="${project.file-config-parameters-ci}" tofile="${project.dir-app}/config/parameters.yml"
+              overwrite="true" haltonerror="true"/>
+    </target>
+
+    <target name="composer-validate" description="Validate Composer dependencies file (composer.json)">
+        <composer composer="${project.bin-composer}" command="validate"/>
+    </target>
+
+    <target name="dependencies-install" description="Install dependencies via Composer">
+        <delete dir="${project.dir-bin}"/>
+        <delete dir="${project.dir-vendors}"/>
+        <composer composer="${project.bin-composer}" command="install">
+            <arg value="--optimize-autoloader"/>
+        </composer>
+    </target>
+
+    <target name="dependencies-list-updates" description="Lists available updates on dependencies via Composer">
+        <composer composer="${project.bin-composer}" command="update">
+            <arg value="--dry-run"/>
+        </composer>
+    </target>
+
+    <target name="phplint" description="Perform syntax check of sourcecode files">
+        <phplint haltonfailure="true" deprecatedAsError="true">
+            <fileset refid="src-php"/>
+        </phplint>
+    </target>
+
+    <target name="phploc" description="Measure project size using PHPLOC">
+        <exec executable="phploc" logoutput="true">
+            <arg value="--log-csv"/>
+            <arg path="${project.dir-build-logs}/phploc.csv"/>
+            <arg value="--no-interaction"/>
+            <arg path="${project.dir-src}"/>
+        </exec>
+    </target>
+
+    <target name="pdepend" description="Calculate software metrics using PHP_Depend">
+        <phpdepend>
+            <fileset refid="src-php"/>
+            <logger type="jdepend-xml" outfile="${project.dir-build-logs}/jdepend.xml"/>
+            <logger type="jdepend-chart" outfile="${project.dir-build-pdepend}/dependencies.svg"/>
+            <logger type="overview-pyramid" outfile="${project.dir-build-pdepend}/overview-pyramid.svg"/>
+        </phpdepend>
+    </target>
+
+    <target name="phpmd"
+            description="Perform project mess detection using PHPMD and print human readable output. Intended for usage on the command line before committing.">
+        <phpmd rulesets="${project.file-config-phpmd}">
+            <fileset refid="src-php"/>
+        </phpmd>
+    </target>
+
+    <target name="phpmd-ci"
+            description="Perform project mess detection using PHPMD creating a log file for the continuous integration server">
+        <phpmd rulesets="${project.file-config-phpmd}">
+            <fileset refid="src-php"/>
+            <formatter type="xml" outfile="${project.dir-build-logs}/pmd.xml"/>
+        </phpmd>
+    </target>
+
+    <target name="phpcs"
+            description="Find coding standard violations in PHP source using PHP_CodeSniffer and print human readable output. Intended for usage on the command line before committing.">
+        <phpcodesniffer standard="${project.phpcs-php-standard}" encoding="UTF-8" haltonerror="true">
+            <fileset refid="src-php"/>
+            <formatter type="default" usefile="false"/>
+        </phpcodesniffer>
+    </target>
+
+    <target name="phpcs-js"
+            description="Find coding standard violations in JavaScript source using PHP_CodeSniffer and print human readable output. Intended for usage on the command line before committing.">
+        <phpcodesniffer standard="${project.phpcs-js-standard}" encoding="UTF-8" haltonerror="true" verbosity="0">
+            <fileset refid="src-js"/>
+            <formatter type="default" usefile="false"/>
+        </phpcodesniffer>
+    </target>
+
+    <target name="phpcs-ci"
+            description="Find coding standard violations in PHP source using PHP_CodeSniffer creating a log file for the continuous integration server">
+        <phpcodesniffer standard="${project.phpcs-php-standard}" encoding="UTF-8" haltonerror="true">
+            <fileset refid="src-php"/>
+            <formatter type="xml" outfile="${project.dir-build-logs}/phpcs.xml"/>
+            <formatter type="checkstyle" outfile="${project.dir-build-logs}/checkstyle-phpcs.xml"/>
+        </phpcodesniffer>
+    </target>
+
+    <target name="phpcs-js-ci"
+            description="Find coding standard violations in JavaScript source using PHP_CodeSniffer creating a log file for the continuous integration server">
+        <phpcodesniffer standard="${project.phpcs-js-standard}" encoding="UTF-8" haltonerror="true">
+            <fileset refid="src-js"/>
+            <formatter type="xml" outfile="${project.dir-build-logs}/phpcs-js.xml"/>
+            <formatter type="checkstyle" outfile="${project.dir-build-logs}/checkstyle-phpcs-js.xml"/>
+        </phpcodesniffer>
+    </target>
+
+    <target name="phpcpd"
+            description="Find duplicate code using PHPCPD and print human readable output. Intended for usage on the command line before committing.">
+        <phpcpd>
+            <fileset refid="src-php"/>
+            <formatter type="default" useFile="false"/>
+        </phpcpd>
+    </target>
+
+    <target name="phpcpd-ci"
+            description="Find duplicate code using PHPCPD creating a log file for the continuous integration server">
+        <phpcpd>
+            <fileset refid="src-php"/>
+            <formatter type="pmd" outfile="${project.dir-build-logs}/pmd-cpd.xml"/>
+        </phpcpd>
+    </target>
+
+    <target name="apidoc" description="Generate API documentation using phpDoc">
+        <phpdoc2 destdir="${project.dir-build-api}" template="responsive">
+            <fileset refid="src-php"/>
+        </phpdoc2>
+    </target>
+
+    <target name="phpunit" description="Run unit tests with PHPUnit">
+        <!-- Read http://symfony.com/doc/current/book/testing.html for details -->
+        <exec command="phpunit -c ${project.dir-app-resources-configs-phpunit}" checkreturn="true" logoutput="true"/>
+    </target>
+
+    <target name="phpcb" description="Aggregate tool output with PHP_CodeBrowser">
+        <exec executable="phpcb" logoutput="true">
+            <arg value="--log"/>
+            <arg path="${project.dir-build-logs}"/>
+            <arg value="--source"/>
+            <arg path="${project.dir-src}"/>
+            <arg value="--output"/>
+            <arg path="${project.dir-build-codebrowser}"/>
+        </exec>
+    </target>
+
+    <target name="symfony-doctrine-schema-validate" description="Validates the doctrine mapping files"
+            depends="symfony-doctrine-migrations-migrate">
+        <SymfonyConsole command="doctrine:schema:validate" checkreturn="true">
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="symfony-twig-lint" description="Lints a template and outputs encountered errors for all bundles">
+        <foreach list="${project.symfony-twig-bundles}" param="tmp.bundle" target="symfony-twig-lint-single-bundle"/>
+        <SymfonyConsole command="twig:lint" checkreturn="true">
+            <arg value="${project.dir-app-resources}"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="symfony-twig-lint-single-bundle"
+            description="Lints a template and outputs encountered errors for a specific bundle">
+        <SymfonyConsole command="twig:lint" checkreturn="true">
+            <arg value="@${tmp.bundle}"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="sensiolabs-security-checker"
+            description="Checks if your application uses dependencies with known security vulnerabilities using SensioLabs Security Check Web service">
+        <SymfonyConsole console="${project.bin-security-checker}" command="security:check" checkreturn="true">
+            <arg value="${project.basedir}/composer.lock"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="symfony-assets-install-dev"
+            description="Installs bundles web assets under a public web directory for dev environment">
+        <SymfonyConsole command="assets:install" checkreturn="true">
+            <arg name="env" value="dev"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="symfony-assets-install-prod"
+            description="Installs bundles web assets under a public web directory for prod environment">
+        <SymfonyConsole command="assets:install" checkreturn="true">
+            <arg name="env" value="prod"/>
+            <arg name="no-debug"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="symfony-assetic-dump-dev" description="Dumps all assets to the filesystem for dev environment">
+        <SymfonyConsole command="assetic:dump" checkreturn="true">
+            <arg name="env" value="dev"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+    <target name="symfony-assetic-dump-prod" description="Dumps all assets to the filesystem for prod environment">
+        <SymfonyConsole command="assetic:dump" checkreturn="true">
+            <arg name="env" value="prod"/>
+            <arg name="no-debug"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="symfony-cache-warmup-prod" description="Warms up an empty cache for prod environment">
+        <SymfonyConsole command="cache:warmup" checkreturn="true">
+            <arg name="env" value="prod"/>
+            <arg name="no-debug"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="symfony-doctrine-database-recreate" description="Drops and creates clean database">
+        <SymfonyConsole command="doctrine:database:drop" checkreturn="true">
+            <arg name="no-interaction"/>
+            <arg name="force"/>
+        </SymfonyConsole>
+        <SymfonyConsole command="doctrine:database:create" checkreturn="true">
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+    </target>
+
+    <target name="symfony-doctrine-migrations-migrate"
+            description="Executes a Doctrine Migrations to the latest available version">
+        <if>
+            <istrue value="${project.symfony-doctrine-migrations-enable}"/>
+            <then>
+                <SymfonyConsole command="doctrine:migrations:migrate" checkreturn="true">
+                    <arg name="no-interaction"/>
+                </SymfonyConsole>
+            </then>
+        </if>
+    </target>
+
+    <target name="symfony-doctrine-fixtures-load"
+            description="Loads Doctrine data fixtures to the database">
+        <if>
+            <istrue value="${project.symfony-doctrine-fixtures-enable}"/>
+            <then>
+                <if>
+                    <istrue value="${project.symfony-doctrine-fixtures-append}"/>
+                    <then>
+                        <SymfonyConsole command="doctrine:fixtures:load" checkreturn="true">
+                            <arg name="append"/>
+                            <arg name="no-interaction"/>
+                        </SymfonyConsole>
+                    </then>
+                    <else>
+                        <SymfonyConsole command="doctrine:fixtures:load" checkreturn="true">
+                            <arg name="no-interaction"/>
+                        </SymfonyConsole>
+                    </else>
+                </if>
+            </then>
+        </if>
+    </target>
+
+    <target name="symfony-doctrine-schema-dump" description="Dumps current DB schema according to Doctrine metadata">
+        <SymfonyConsole command="doctrine:schema:create" checkreturn="true" propertyName="tmp.sql">
+            <arg name="dump-sql"/>
+            <arg name="no-interaction"/>
+        </SymfonyConsole>
+        <echo msg="${tmp.sql}" file="${project.file-doctrine-db-schema}" append="false"/>
+    </target>
+
+    <target name="php-cs-fixer" description="Fixes most issues in code as defined in the PSR-1 and PSR-2 documents">
+        <exec executable="${project.bin-php}" logoutput="true">
+            <arg path="${project.bin-php-cs-fixer}"/>
+            <arg value="fix"/>
+            <arg path="${project.basedir}"/>
+            <arg value="--level"/>
+            <arg value="all"/>
+            <arg value="--config"/>
+            <arg value="sf21"/>
+        </exec>
+    </target>
+
+    <target name="build-tools-self-update"
+            description="Updates tools used for build: Composer and PHP Coding Standards Fixer">
+        <exec executable="${project.bin-php}" checkreturn="true" logoutput="true">
+            <arg path="${project.bin-composer}"/>
+            <arg value="self-update"/>
+        </exec>
+        <exec executable="${project.bin-php}" checkreturn="true" logoutput="true">
+            <arg path="${project.bin-php-cs-fixer}"/>
+            <arg value="self-update"/>
+        </exec>
+    </target>
+
+    <!--<target name="hphpa"-->
+            <!--description="Analyzes code using HipHop's static analyzer and print human readable output. Intended for usage on the command line before committing.">-->
+        <!--<exec executable="hphpa" logoutput="true">-->
+            <!--<arg value="- -ruleset"/>-->
+            <!--<arg path="${project.file-config-hphpa-ruleset}"/>-->
+            <!--<arg value="- -checkstyle-include"/>-->
+            <!--<arg path="${project.dir-src}"/>-->
+            <!--<arg path="${project.basedir}"/>-->
+        <!--</exec>-->
+    <!--</target>-->
+
+    <!--<target name="hphpa-ci"-->
+            <!--description="Analyzes code using HipHop's static analyzer creating a log file for the continuous integration server">-->
+        <!--<exec executable="hphpa" logoutput="true">-->
+            <!--<arg value="- -ruleset"/>-->
+            <!--<arg path="${project.file-config-hphpa-ruleset}"/>-->
+            <!--<arg value="- -checkstyle"/>-->
+            <!--<arg path="${project.dir-build-logs}/checkstyle-hphpa.xml"/>-->
+            <!--<arg value="- -checkstyle-include"/>-->
+            <!--<arg path="${project.dir-src}"/>-->
+            <!--<arg path="${project.basedir}"/>-->
+        <!--</exec>-->
+    <!--</target>-->
+
+    <target name="package-version" description="Stores package version in text file">
+        <echo msg="${project.version}" file="${project.file-package-version}" append="false"/>
+    </target>
+
+    <target name="package-db-schema" description="Stores DB schema in the package">
+        <copy file="${project.file-doctrine-db-schema}" tofile="${project.file-package-db-schema}" haltonerror="true"
+              overwrite="true"/>
+    </target>
+
+    <target name="package-archive" description="Creates archived package ready for deployment">
+        <delete file="${project.file-package}"/>
+        <delete includeemptydirs="true">
+            <fileset refid="symfony-temp"/>
+        </delete>
+        <tar destfile="${project.file-package}" compression="gzip">
+            <fileset refid="package"/>
+        </tar>
+    </target>
+
+    <target name="deploy-maintenance-enable" description="Enables Maintenance mode on a remote host">
+        <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+            <arg value="${project.deploy-env}"/>
+            <arg value="deploy:web:disable"/>
+            <arg value="REASON=&quot;${project.deploy-maintenance-reason}&quot;"/>
+            <arg value="UNTIL=&quot;${project.deploy-maintenance-until}&quot;"/>
+        </exec>
+    </target>
+
+    <target name="deploy-maintenance-disable" description="Disables Maintenance mode on a remote host">
+        <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+            <arg value="${project.deploy-env}"/>
+            <arg value="deploy:web:enable"/>
+        </exec>
+    </target>
+
+    <target name="deploy-backup-db" description="Performs database backup on a remote host">
+        <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+            <arg value="${project.deploy-env}"/>
+            <arg value="database:dump:remote"/>
+        </exec>
+    </target>
+
+    <target name="deploy-clear-doctrine-cache" description="Clears Doctrine ORM caches">
+        <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+            <arg value="${project.deploy-env}"/>
+            <arg value="symfony:doctrine:cache:clear_metadata"/>
+        </exec>
+        <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+            <arg value="${project.deploy-env}"/>
+            <arg value="symfony:doctrine:cache:clear_query"/>
+        </exec>
+        <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+            <arg value="${project.deploy-env}"/>
+            <arg value="symfony:doctrine:cache:clear_result"/>
+        </exec>
+    </target>
+
+    <target name="deploy-cleanup-old-releases" description="Removes old releases on a remote host">
+        <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+            <arg value="${project.deploy-env}"/>
+            <arg value="deploy:cleanup"/>
+        </exec>
+    </target>
+
+    <target name="deploy-artifact"
+            description="Deploys all found artifacts to a remote host. Warning! There should be only one artifact present. Otherwise it will deploy all artifacts">
+        <foreach param="tmp.devnull" absparam="project.deploy-archive" target="deploy">
+            <fileset refid="package-artifacts"/>
+        </foreach>
+    </target>
+
+    <target name="deploy" description="Deploys the application archive to a remote host">
+        <!--Enabling maintenance mode-->
+        <if>
+            <istrue value="${project.deploy-maintenance-enable}"/>
+            <then>
+                <phingcall target="deploy-maintenance-enable"/>
+            </then>
+        </if>
+
+        <!--Backing up DB-->
+        <if>
+            <istrue value="${project.deploy-backup-db}"/>
+            <then>
+                <phingcall target="deploy-backup-db"/>
+            </then>
+        </if>
+
+        <!--Clearing Doctrine ORM caches-->
+        <if>
+            <istrue value="${project.deploy-clear-doctrine-cache}"/>
+            <then>
+                <phingcall target="deploy-clear-doctrine-cache"/>
+            </then>
+        </if>
+
+        <!--Dumping current version name to the local file-->
+        <if>
+            <istrue value="${project.deploy-dump-version}"/>
+            <then>
+                <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+                    <arg value="${project.deploy-env}"/>
+                    <arg value="deploy:dump_current_version"/>
+                </exec>
+            </then>
+        </if>
+
+        <!--Performing deployment of the new build-->
+        <exec executable="${project.bin-capistrano}" checkreturn="true" logoutput="true">
+            <arg value="${project.deploy-env}"/>
+            <arg value="deploy"/>
+            <arg value="-s"/>
+            <arg value="repository=${project.deploy-archive}"/>
+        </exec>
+
+        <!--Disabling maintenance mode-->
+        <if>
+            <istrue value="${project.deploy-maintenance-enable}"/>
+            <then>
+                <phingcall target="deploy-maintenance-disable"/>
+            </then>
+        </if>
+
+        <!--Clearing old releases-->
+        <if>
+            <istrue value="${project.deploy-cleanup-old-releases}"/>
+            <then>
+                <phingcall target="deploy-cleanup-old-releases"/>
+            </then>
+        </if>
+    </target>
+</project>

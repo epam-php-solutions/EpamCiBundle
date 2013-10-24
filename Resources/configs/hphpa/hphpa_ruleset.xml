@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<ruleset>
+ <rule name="BadPHPIncludeFile" message="Bad include: %s" />
+ <rule name="PHPIncludeFileNotFound" message="Include not found: %s" />
+ <rule name="UnknownClass" message="Class %s is unknown" />
+ <rule name="UnknownBaseClass" message="Base class %s is unknown" />
+ <rule name="UnknownFunction" message="Unknown function %s" />
+ <rule name="UseEvaluation" message="Usage of eval()" />
+ <rule name="UseUndeclaredVariable" message="Variable %s is not declared" />
+ <rule name="UseUndeclaredGlobalVariable" message="Global variable %s is not declared" />
+ <rule name="UseUndeclaredConstant" message="Constant %s is not declared" />
+ <rule name="UnknownObjectMethod" message="Call to unknown method: %s" />
+ <rule name="InvalidMagicMethod" message="Magic method %s is invalid" />
+ <rule name="BadConstructorCall" message="Bad call to constructor: %s" />
+ <rule name="DeclaredVariableTwice" message="Variable is declared twice: %s" />
+ <rule name="DeclaredConstantTwice" message="Constant is declared twice: %s" />
+ <rule name="BadDefine" message="Bad define: %s" />
+ <rule name="RequiredAfterOptionalParam" message="Required parameters after optional parameters: %s" />
+ <rule name="RedundantParameter" message="Redundant parameter: %s" />
+ <rule name="TooFewArgument" message="Too few arguments in function or method call: %s" />
+ <rule name="TooManyArgument" message="Too many arguments in function or method call: %s" />
+ <rule name="BadArgumentType" message="Bad argument type: %s" />
+ <rule name="StatementHasNoEffect" message="Statement %s has no effect" />
+ <rule name="UseVoidReturn" message="Usage of void return value from %s" />
+ <rule name="MissingObjectContext" message="Trying to use $this in static context" />
+ <rule name="MoreThanOneDefault" message="More than one default in switch statement" />
+ <rule name="InvalidArrayElement" message="Invalid array element: %s" />
+ <rule name="InvalidDerivation" message="Invalid inheritance: %s" />
+ <rule name="InvalidOverride" message="Invalid override: %s" />
+ <rule name="ReassignThis" message="Reassignment of $this" />
+ <rule name="MissingAbstractMethodImpl" message="Implementation of abstract methods missing: %s" />
+ <rule name="BadPassByReference" message="Bad pass-by-reference: %s" />
+ <rule name="ConditionalClassLoading" message="Class %s is conditionally loaded" />
+ <rule name="GotoUndefLabel" message="GOTO to invalid label %s" />
+ <rule name="GotoInvalidBlock" message="GOTO to invalid block: %s" />
+ <rule name="AbstractProperty" message="Attribute %s is abstract" />
+ <rule name="UnknownTrait" message="Trait %s is unknown" />
+ <rule name="MethodInMultipleTraits" message="Method %s is declared in multiple traits" />
+ <rule name="UnknownTraitMethod" message="Trait method %s is unknown" />
+ <rule name="InvalidAccessModifier" message="Access modified %s is invalid" />
+ <rule name="CyclicDependentTraits" message="Cyclic dependency between traits: %s" />
+ <rule name="InvalidTraitStatement" message="Invalid trait statement: %s" />
+ <rule name="RedeclaredTrait" message="Trait %s is declared twice" />
+ <rule name="InvalidInstantiation" message="Invalid instantiation: %s" />
+</ruleset>

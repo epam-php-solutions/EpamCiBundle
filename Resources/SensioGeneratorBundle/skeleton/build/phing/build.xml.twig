@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="{{ project_name }}" default="build">
+    <import file="build-epam-ci.xml"/>
+    <!-- Targets -->
+    <!-- You can customize build, build-ci, package targets by overriding them here. Also you can override any other target -->
+
+    <!--<target name="build" description="Builds the project. Intended for usage on the command line before committing."-->
+            <!--depends="clean,prepare,composer-validate,phplint,php-cs-fixer,symfony-assets-install-dev,symfony-assetic-dump-dev,symfony-doctrine-schema-validate,symfony-doctrine-fixtures-load,symfony-twig-lint,phpmd,phpcs,phpcs-js,phpcpd,phpunit,hphpa,dependencies-list-updates,sensiolabs-security-checker"/>-->
+    <!--<target name="build-ci" description="Builds the project for the continuous integration server"-->
+            <!--depends="clean,prepare,composer-validate,copy-configs-ci,dependencies-install,check-environment,phplint,symfony-doctrine-database-recreate,symfony-doctrine-schema-validate,symfony-doctrine-fixtures-load,symfony-twig-lint,phploc,pdepend,phpmd-ci,phpcs-ci,phpcs-js-ci,phpcpd-ci,apidoc,phpunit,phpcb,hphpa-ci,dependencies-list-updates,sensiolabs-security-checker"/>-->
+    <!--<target name="package" description="Prepares archived package containing ready for deployment application"-->
+            <!--depends="prepare,composer-validate,copy-configs-ci,dependencies-install,symfony-doctrine-schema-dump,symfony-cache-warmup-prod,symfony-assets-install-prod,symfony-assetic-dump-prod,package-db-schema,package-version,package-archive"/>-->
+</project>

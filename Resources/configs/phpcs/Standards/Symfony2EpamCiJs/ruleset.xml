@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<ruleset name="Symfony2EpamCiJs">
+    <description>The Symfony2 Continuous Integration coding standard for JavaScript.</description>
+</ruleset>

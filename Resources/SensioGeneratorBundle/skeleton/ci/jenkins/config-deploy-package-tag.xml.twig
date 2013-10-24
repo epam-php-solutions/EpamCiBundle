@@ -1,0 +1,154 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+    <actions/>
+    <description>Deploys specific package to the chosen environment</description>
+    <keepDependencies>false</keepDependencies>
+    <properties>
+        <hudson.model.ParametersDefinitionProperty>
+            <parameterDefinitions>
+                <hudson.plugins.copyartifact.BuildSelectorParameter plugin="copyartifact@1.26">
+                    <name>PACKAGE_TAG_BUILD_ID</name>
+                    <description>Id of the &lt;code&gt;config-build-package-tag&lt;/code&gt; build which will be used as a source for the package</description>
+                    <defaultSelector class="hudson.plugins.copyartifact.StatusBuildSelector"/>
+                </hudson.plugins.copyartifact.BuildSelectorParameter>
+                <hudson.model.ChoiceParameterDefinition>
+                    <name>ENVIRONMENT_NAME</name>
+                    <description>Target environment</description>
+                    <choices class="java.util.Arrays$ArrayList">
+                        <a class="string-array">
+                            <string>qa</string>
+                        </a>
+                    </choices>
+                </hudson.model.ChoiceParameterDefinition>
+                <hudson.model.ChoiceParameterDefinition>
+                    <name>MAINTENANCE_ENABLE</name>
+                    <description>Yes = 1, No = 0</description>
+                    <choices class="java.util.Arrays$ArrayList">
+                        <a class="string-array">
+                            <string>1</string>
+                            <string>0</string>
+                        </a>
+                    </choices>
+                </hudson.model.ChoiceParameterDefinition>
+                <hudson.model.TextParameterDefinition>
+                    <name>MAINTENANCE_MESSAGE</name>
+                    <description>Maintenance mode message</description>
+                    <defaultValue>We are sorry. Project is under maintenance.</defaultValue>
+                </hudson.model.TextParameterDefinition>
+                <hudson.model.StringParameterDefinition>
+                    <name>MAINTENANCE_UNTIL</name>
+                    <description>Planned end of the deployment</description>
+                    <defaultValue>HH:MM GMT</defaultValue>
+                </hudson.model.StringParameterDefinition>
+            </parameterDefinitions>
+        </hudson.model.ParametersDefinitionProperty>
+    </properties>
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@1.3.0">
+        <configVersion>2</configVersion>
+        <userRemoteConfigs>
+            <hudson.plugins.git.UserRemoteConfig>
+                <name></name>
+                <refspec></refspec>
+                <url>repo-url.git</url>
+            </hudson.plugins.git.UserRemoteConfig>
+        </userRemoteConfigs>
+        <branches>
+            <hudson.plugins.git.BranchSpec>
+                <name>master</name>
+            </hudson.plugins.git.BranchSpec>
+        </branches>
+        <disableSubmodules>false</disableSubmodules>
+        <recursiveSubmodules>false</recursiveSubmodules>
+        <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+        <authorOrCommitter>false</authorOrCommitter>
+        <clean>false</clean>
+        <wipeOutWorkspace>false</wipeOutWorkspace>
+        <pruneBranches>false</pruneBranches>
+        <remotePoll>false</remotePoll>
+        <ignoreNotifyCommit>false</ignoreNotifyCommit>
+        <useShallowClone>false</useShallowClone>
+        <buildChooser class="hudson.plugins.git.util.DefaultBuildChooser"/>
+        <gitTool>Default</gitTool>
+        <submoduleCfg class="list"/>
+        <relativeTargetDir></relativeTargetDir>
+        <reference></reference>
+        <excludedRegions></excludedRegions>
+        <excludedUsers></excludedUsers>
+        <gitConfigName></gitConfigName>
+        <gitConfigEmail></gitConfigEmail>
+        <skipTag>false</skipTag>
+        <includedRegions></includedRegions>
+        <scmName></scmName>
+    </scm>
+    <canRoam>true</canRoam>
+    <disabled>false</disabled>
+    <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+    <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+    <triggers class="vector"/>
+    <concurrentBuild>false</concurrentBuild>
+    <builders>
+        <hudson.plugins.phing.PhingBuilder plugin="phing@0.13">
+            <targets>clean prepare</targets>
+            <useModuleRoot>true</useModuleRoot>
+        </hudson.plugins.phing.PhingBuilder>
+        <hudson.plugins.copyartifact.CopyArtifact plugin="copyartifact@1.26">
+            <project>config-build-package-tag</project>
+            <filter>build/output/**/*.tar.gz</filter>
+            <target></target>
+            <selector class="hudson.plugins.copyartifact.ParameterizedBuildSelector">
+                <parameterName>PACKAGE_TAG_BUILD_ID</parameterName>
+            </selector>
+        </hudson.plugins.copyartifact.CopyArtifact>
+        <hudson.plugins.phing.PhingBuilder plugin="phing@0.13">
+            <targets>deploy-artifact</targets>
+            <properties>project.deploy-env=${ENVIRONMENT_NAME}
+                project.deploy-maintenance-enable=${MAINTENANCE_ENABLE}
+                project.deploy-maintenance-reason=${MAINTENANCE_MESSAGE}
+                project.deploy-maintenance-until=${MAINTENANCE_UNTIL}</properties>
+            <useModuleRoot>true</useModuleRoot>
+        </hudson.plugins.phing.PhingBuilder>
+    </builders>
+    <publishers>
+        <hudson.tasks.ArtifactArchiver>
+            <artifacts>build/output/*.tar.gz,backups/*.latest.sql.gz,backups/*.txt</artifacts>
+            <latestOnly>false</latestOnly>
+            <allowEmptyArchive>false</allowEmptyArchive>
+        </hudson.tasks.ArtifactArchiver>
+        <hudson.tasks.Mailer plugin="mailer@1.5">
+            <recipients>user@example.com</recipients>
+            <dontNotifyEveryUnstableBuild>true</dontNotifyEveryUnstableBuild>
+            <sendToIndividuals>false</sendToIndividuals>
+        </hudson.tasks.Mailer>
+        <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.34">
+            <recipientList>user@example.com</recipientList>
+            <configuredTriggers>
+                <hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
+                    <email>
+                        <recipientList>user@example.com</recipientList>
+                        <subject>Project deployment notification</subject>
+                        <body>New project build was successfully deployed to &quot;$ENVIRONMENT_NAME&quot; environment</body>
+                        <sendToDevelopers>false</sendToDevelopers>
+                        <sendToRequester>false</sendToRequester>
+                        <includeCulprits>false</includeCulprits>
+                        <sendToRecipientList>false</sendToRecipientList>
+                        <attachmentsPattern></attachmentsPattern>
+                        <attachBuildLog>false</attachBuildLog>
+                        <compressBuildLog>false</compressBuildLog>
+                        <replyTo></replyTo>
+                        <contentType>project</contentType>
+                    </email>
+                </hudson.plugins.emailext.plugins.trigger.SuccessTrigger>
+            </configuredTriggers>
+            <contentType>default</contentType>
+            <defaultSubject>$DEFAULT_SUBJECT</defaultSubject>
+            <defaultContent>$DEFAULT_CONTENT</defaultContent>
+            <attachmentsPattern></attachmentsPattern>
+            <presendScript></presendScript>
+            <attachBuildLog>false</attachBuildLog>
+            <compressBuildLog>false</compressBuildLog>
+            <replyTo></replyTo>
+            <saveOutput>false</saveOutput>
+        </hudson.plugins.emailext.ExtendedEmailPublisher>
+    </publishers>
+    <buildWrappers/>
+</project>

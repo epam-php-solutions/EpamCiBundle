@@ -1,0 +1,50 @@
+{
+    "name": "epam/ci-bundle",
+    "description": "This bundle provides functionality for Continuous Integration & Automated Deployments for Symfony-based projects",
+    "keywords": ["ci", "deployment", "continuous integration", "phing", "jenkins", "hudson", "capistrano", "capifony"],
+    "type": "symfony-bundle",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "EPAM Systems",
+            "homepage": "http://www.epam.com"
+        },
+        {
+            "name": "Max Romanovsky",
+            "email": "max.romanovsky@gmail.com",
+            "homepage": "http://maxromanovsky.com",
+            "role": "Developer"
+        },
+        {
+            "name": "Capifony Community",
+            "homepage": "https://github.com/everzet/capifony/graphs/contributors"
+        },
+        {
+            "name": "Php-jenkins-template Community",
+            "homepage": "https://github.com/sebastianbergmann/php-jenkins-template/graphs/contributors"
+        }
+    ],
+    "require": {
+        "symfony/symfony": "~2.3",
+        "sensiolabs/security-checker": "1.*"
+    },
+    "suggest": {
+        "doctrine/doctrine-migrations-bundle": "Required for Doctrine Migrations during build & deployment",
+        "doctrine/migrations": "Required for Doctrine Migrations during build & deployment",
+        "doctrine/doctrine-fixtures-bundle": "Required for Doctrine Fixtures during build",
+        "doctrine/data-fixtures": "Required for Doctrine Fixtures during build",
+        "ext-xsl": "Required by apidoc phing target (backed by phpDocumentor 2)"
+    },
+    "autoload": {
+        "psr-0": {
+            "Epam\\CiBundle": ""
+        }
+    },
+    "target-dir": "Epam/CiBundle",
+    "minimum-stability": "dev",
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    }
+}
