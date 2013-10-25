@@ -8,7 +8,10 @@ Currently it supports Phing_ build tool, `Jenkins CI`_ server and `Capifony`_ de
 
 Todo
 ----
-#. build
+#. general
+    - put a link to presentation
+    - add support for building bundles
+#. build    
     - add build tools to ``require-dev``, don't use tools from pear
     - ``build`` target: add assetic:dump --env=prod
     - symfony security validator: display output from webservice if vulnerability was found
@@ -20,8 +23,6 @@ Todo
     - handling of running CLI/cron scripts
     - execute ``composer install --dry-run`` and ``php app/check.php``during deployment to verify that environment is
       sane
-#. general
-    - put a link to presentation
 
 Detailed information
 --------------------
