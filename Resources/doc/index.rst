@@ -13,6 +13,7 @@ Todo
     - ``build`` target: add assetic:dump --env=prod
     - symfony security validator: display output from webservice if vulnerability was found
     - add hphpa analysis
+    - add support for SensioLabs Insight (https://insight.sensiolabs.com/account)
 #. deploy
     - rollback docs
     - custom CLI tasks during deployment via jenkins
