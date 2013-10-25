@@ -92,9 +92,7 @@ class InitCommand extends GeneratorCommand
                 return 1;
             }
         }
-//        if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
-//            $output->writeln('Test ' . $input->getArgument('project-name'));
-//        }
+
         /** @var InitGenerator $generator */
         $generator = $this->getGenerator($this->bundle);
         $generator->generate();
